@@ -321,7 +321,7 @@ private:
       // convert (latitude, longitude, altitude) -> (easting, northing, altitude) in UTM coordinate
       geodesy::UTMPoint utm;
       geodesy::fromMsg((*closest_gps)->position, utm);
-      Eigen::Vector3d xyz(utm.easting, utm.northing, utm.altitude);
+      Eigen::Vector3d xyz(utm.northing, utm.easting, utm.altitude);
 
       // the first gps data position will be the origin of the map
       if(!zero_utm) {
