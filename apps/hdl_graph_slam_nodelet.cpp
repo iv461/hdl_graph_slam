@@ -321,13 +321,34 @@ private:
       // convert (latitude, longitude, altitude) -> (easting, northing, altitude) in UTM coordinate
       geodesy::UTMPoint utm;
       geodesy::fromMsg((*closest_gps)->position, utm);
-      Eigen::Vector3d xyz(utm.northing, utm.easting, utm.altitude);
+      Eigen::Vector3d xyz(utm.easting, utm.northing, utm.altitude);
 
       // the first gps data position will be the origin of the map
       if(!zero_utm) {
         zero_utm = xyz;
       }
       xyz -= (*zero_utm);
+
+      /// transform the GPS measurement in the keyframe coordinate system, which is odom, which is 
+      /// 'lidar' because we use lidar odometry ! 
+      geometry_msgs::PointStamped gps_position;
+      gps_position.header = (*closest_gps)->header;
+      std::cout << "transforming gps from " << gps_position.header.stamp << " to "  << "rslidar" << std::endl;
+      gps_position.point.x = xyz.x();
+      gps_position.point.y = xyz.y();
+      gps_position.point.z = xyz.z();
+      geometry_msgs::PointStamped gps_position_in_odom_frame;
+      try {
+        tf_listener.transformPoint("rslidar", gps_position, gps_position_in_odom_frame);
+      } catch(std::exception& e) {
+        std::cerr << "Failed to transform GPS position, ex was: " << e.what() << std::endl;
+        return false;
+      }
+
+      xyz.x() = gps_position_in_odom_frame.point.x;
+      xyz.y() = gps_position_in_odom_frame.point.y;
+      xyz.z() = gps_position_in_odom_frame.point.z;
+      std::cout << "TRANSFORMED GPS: " << xyz.transpose() << std::endl;
 
       keyframe->utm_coord = xyz;
 
